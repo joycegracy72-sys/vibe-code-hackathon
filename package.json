@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "agent:init": "node ./scripts/validate-agent-schema.mjs",
+    "agent:init:cron": "node ./scripts/validate-agent-schema.mjs --trigger-cron",
+    "agent:check-pipeline": "bash ./scripts/agent-pipeline-check.sh",
+    "agent:check-pipeline:ps1": "powershell -ExecutionPolicy Bypass -File ./scripts/agent-pipeline-check.ps1"
   },
   "dependencies": {
     "next": "16.3.0",
