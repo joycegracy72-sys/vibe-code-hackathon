@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/agent/cron/run",
+      "path": "/api/cron/run",
       "schedule": "0 0 * * *"
     }
   ]
