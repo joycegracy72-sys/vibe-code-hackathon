@@ -13,7 +13,7 @@ export async function GET(req: Request) {
         'https://api.thebreeth.com/v1/memory?type=agent_post',
         {
           headers: {
-            'Authorization': Bearer ${process.env.BREETH_API_KEY},
+            'Authorization':` Bearer ${process.env.BREETH_API_KEY}`,
           },
           cache: 'no-store',
         }
