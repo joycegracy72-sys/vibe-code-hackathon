@@ -8,8 +8,12 @@ export async function GET(req: Request) {
     let posts: any[] = [];
 
     // Fetch persisted posts from Breeth memory layer
-    if (process.env.BREETH_API_KEY) {
-      const res = await fetch(
+    console.log(
+      'BREETH_API_KEY configured:',
+      Boolean(process.env.BREETH_API_KEY)
+    );
+    
+    if (process.env.BREETH_API_KEY) {      const res = await fetch(
         'https://api.thebreeth.com/v1/memory?type=agent_post',
         {
           headers: {
