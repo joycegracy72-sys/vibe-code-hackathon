@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const agentId = searchParams.get('agentId') || 'agent-ai-creator-001';
+  const agentId =
+    searchParams.get('agentId') || 'agent-ai-creator-001';
 
   try {
     let posts: any[] = [];
@@ -13,81 +14,126 @@ export async function GET(req: Request) {
     );
 
     if (process.env.BREETH_API_KEY) {
-      const res = await fetch(
-        `https://api.thebreeth.com/v1/memories?agent_id=${encodeURIComponent(
-          agentId
-        )}&limit=20`,
-        {
-          headers: {
-            'Authorization': `Bearer ${process.env.BREETH_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          cache: 'no-store',
-        }
-      );
+      const breethUrl =
+        `https://api.thebreeth.com/v1/memories` +
+        `?agent_id=${encodeURIComponent(agentId)}` +
+        `&limit=20`;
+
+      console.log('BREETH REQUEST URL:', breethUrl);
+
+      const res = await fetch(breethUrl, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${process.env.BREETH_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store',
+      });
 
       console.log('BREETH RESPONSE STATUS:', res.status);
 
       const responseText = await res.text();
-      console.log('BREETH RAW RESPONSE:', responseText);
+
+      console.log(
+        'BREETH RAW RESPONSE:',
+        responseText
+      );
 
       if (res.ok) {
         try {
           const data = JSON.parse(responseText);
-          console.log('BREETH PARSED RESPONSE:', JSON.stringify(data));
+
+          console.log(
+            'BREETH PARSED RESPONSE:',
+            JSON.stringify(data)
+          );
 
           posts = (data.memories || [])
-            .map((m: any) => {
+            .map((memory: any) => {
               try {
-                return typeof m.content === 'string'
-                  ? JSON.parse(m.content)
-                  : m.content;
+                if (typeof memory.content === 'string') {
+                  return JSON.parse(memory.content);
+                }
+
+                return memory.content || memory;
               } catch {
                 return null;
               }
             })
             .filter(Boolean);
 
-          console.log('PARSED POSTS:', JSON.stringify(posts));
+          console.log(
+            'PARSED POSTS:',
+            JSON.stringify(posts)
+          );
         } catch (error) {
-          console.error('BREETH JSON PARSE ERROR:', error);
+          console.error(
+            'BREETH JSON PARSE ERROR:',
+            error
+          );
         }
       } else {
-        console.error('BREETH REQUEST FAILED:', res.status, responseText);
+        console.error(
+          'BREETH REQUEST FAILED:',
+          res.status,
+          responseText
+        );
       }
     } else {
-      console.log('BREETH_API_KEY is not configured');
+      console.log(
+        'BREETH_API_KEY is not configured'
+      );
     }
 
-    // Fallback if no posts have been generated yet
+    // Fallback only when Breeth contains no usable posts.
     if (!posts.length) {
-      console.log('NO POSTS FOUND — USING FALLBACK');
+      console.log(
+        'NO POSTS FOUND — USING FALLBACK'
+      );
 
       posts = [
         {
           id: 'post_1754680920000_init',
           createdAt: '2026-08-08T18:00:00.000Z',
-          text: 'Runtime semantic evaluation is replacing static guardrails in production LLM deployments.',
+          text:
+            'Runtime semantic evaluation is replacing static guardrails in production LLM deployments.',
           rationale:
             'Why selected: Critical runtime vulnerability vector in LLM production systems. Why relevant now: High developer adoption of guardrail frameworks this week. Decision over alternatives: Chosen for direct operational AI security value.',
-          sources: ['https://arxiv.org/abs/2401.00001'],
+          sources: [
+            'https://arxiv.org/abs/2401.00001',
+          ],
         },
       ];
     }
 
-    // Sort reverse-chronologically
+    // Newest posts first.
     posts.sort(
       (a: any, b: any) =>
         new Date(b.createdAt).getTime() -
         new Date(a.createdAt).getTime()
     );
 
-    console.log('FINAL FEED POSTS:', JSON.stringify(posts, null, 2));
+    console.log(
+      'FINAL FEED POSTS:',
+      JSON.stringify(posts, null, 2)
+    );
 
-    return NextResponse.json({ posts });
+    return NextResponse.json({
+      posts,
+    });
   } catch (error) {
-    console.error('FEED ERROR:', error);
+    console.error(
+      'FEED ERROR:',
+      error
+    );
 
-    return NextResponse.json({ posts: [] });
+    return NextResponse.json(
+      {
+        posts: [],
+      },
+      {
+        status: 500,
+      }
+    );
   }
 }
