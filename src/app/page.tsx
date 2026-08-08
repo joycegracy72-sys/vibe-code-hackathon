@@ -8,7 +8,7 @@ interface Post {
   text: string;
   rationale: string;
   sources: string[];
-  status?: 'pending' | 'approved' | 'rejected';
+  status?: 'published' | 'flagged';
 }
 
 export default function AutonomousAgentDashboard() {
@@ -21,20 +21,19 @@ export default function AutonomousAgentDashboard() {
   const [error, setError] = useState('');
   const [mounted, setMounted] = useState(false);
 
-  // Prevent hydration mismatch by ensuring time-dependent rendering happens after mounting
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Live streaming telemetry log timeline simulation
+  // Telemetry Reasoning Stream
   useEffect(() => {
     if (!agentId) return;
-    
+
     const operationalPhases = [
-      "🔄 Monitoring global vulnerability vector definitions...",
-      "🔍 Deep scanning research feeds from arXiv and GitHub metadata...",
-      "💡 Synthesizing new strategic insights into prompt engineering defenses...",
-      "✅ Verified operational grounding tokens match Breeth cluster specs."
+      "🔄 Monitoring global research feeds (arXiv & GitHub)...",
+      "🔍 Running candidate discovery & duplicate memory check...",
+      "💡 Evaluating topic relevance & prompt injection defense impact...",
+      "✅ Post published autonomously to public feed stream."
     ];
 
     let currentPhase = 0;
@@ -42,7 +41,18 @@ export default function AutonomousAgentDashboard() {
       const timestamp = new Date().toLocaleTimeString();
       setLogs((prev) => [`[${timestamp}] ${operationalPhases[currentPhase % operationalPhases.length]}`, ...prev]);
       currentPhase++;
-    }, 4000);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [agentId]);
+
+  // Autonomous Feed Synchronization (Polls every 30 seconds)
+  useEffect(() => {
+    if (!agentId) return;
+
+    const interval = setInterval(() => {
+      fetchFeed(agentId);
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [agentId]);
@@ -51,8 +61,8 @@ export default function AutonomousAgentDashboard() {
     e.preventDefault();
     setLoadingInit(true);
     setError('');
-    setLogs([`[${new Date().toLocaleTimeString()}] 🚀 Initiating instance connection request...`]);
-    
+    setLogs([`[${new Date().toLocaleTimeString()}] 🚀 Initiating autonomous agent runtime instance...`]);
+
     try {
       const res = await fetch('/api/agent/init', {
         method: 'POST',
@@ -62,8 +72,8 @@ export default function AutonomousAgentDashboard() {
       if (!res.ok) throw new Error('Failed to initialize agent configuration.');
       const data = await res.json();
       setAgentId(data.agentId);
-      
-      await fetchFeed();
+
+      await fetchFeed(data.agentId);
     } catch (err: any) {
       setError(err.message || 'Initialization failure.');
     } finally {
@@ -71,24 +81,27 @@ export default function AutonomousAgentDashboard() {
     }
   };
 
-  const fetchFeed = async () => {
+  const fetchFeed = async (activeAgentId: string) => {
     try {
-      const res = await fetch('/api/agent/feed?agentId=agent-ai-creator-001');
+      const res = await fetch(`/api/agent/feed?agentId=${encodeURIComponent(activeAgentId)}`);
       const data = await res.json();
-      const structuredPosts = (data.posts || []).map((p: Post) => ({ ...p, status: 'pending' as const }));
+      const structuredPosts = (data.posts || []).map((p: Post) => ({
+        ...p,
+        status: p.status || 'published'
+      }));
       setFeed(structuredPosts);
-      setLogs((prev) => [`[${new Date().toLocaleTimeString()}] ✅ Content feed pipeline securely synchronized.`, ...prev]);
+      setLogs((prev) => [`[${new Date().toLocaleTimeString()}] ✅ Synchronized ${structuredPosts.length} posts from serverless memory.`, ...prev]);
     } catch (err: any) {
       setError('Feed retrieval error.');
     }
   };
 
-  const handleAction = (id: string, actionType: 'approved' | 'rejected') => {
+  const handleFlag = (id: string) => {
     setFeed((prev) =>
-      prev.map((post) => (post.id === id ? { ...post, status: actionType } : post))
+      prev.map((post) => (post.id === id ? { ...post, status: 'flagged' } : post))
     );
     setLogs((prev) => [
-      `[${new Date().toLocaleTimeString()}] 👤 Human Action: Post ${id} has been marked as ${actionType.toUpperCase()}`,
+      `[${new Date().toLocaleTimeString()}] 🛡️ Observability Note: Post ${id} flagged for human review.`,
       ...prev,
     ]);
   };
@@ -96,14 +109,14 @@ export default function AutonomousAgentDashboard() {
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 p-6 md:p-10 font-sans selection:bg-cyan-500/30">
       <div className="max-w-6xl mx-auto space-y-6">
-        
-        {/* Navigation Header */}
+
+        {/* Header */}
         <header className="border-b border-slate-800 pb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-black text-transparent bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-500 bg-clip-text uppercase tracking-wider">
               Autonomous AI Creator Engine
             </h1>
-            <p className="text-xs text-slate-500 font-mono">Platform Vector: Live Graph Telemetry Enabled</p>
+            <p className="text-xs text-slate-500 font-mono">Platform Vector: Continuous Background Publishing Enabled</p>
           </div>
           <div className="flex items-center gap-3">
             <span className={`h-2 w-2 rounded-full ${agentId ? 'bg-emerald-500 animate-pulse' : 'bg-slate-700'}`} />
@@ -119,16 +132,16 @@ export default function AutonomousAgentDashboard() {
           </div>
         )}
 
-        {/* Dashboard Grid */}
+        {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          
+
           {/* Left Column Controls */}
           <div className="lg:col-span-4 space-y-6">
-            
-            {/* Manifest Card */}
+
+            {/* Agent Configuration */}
             <section className="bg-slate-900/50 border border-slate-800/80 p-5 rounded-xl backdrop-blur-md shadow-xl">
               <h2 className="text-xs font-mono uppercase tracking-widest text-slate-400 mb-4 border-b border-slate-800 pb-2 flex justify-between items-center">
-                <span>Manifest Vector</span>
+                <span>Agent Identity Vector</span>
                 <span className="text-[10px] text-cyan-400 font-normal lowercase font-mono">v1.0.4</span>
               </h2>
               <form onSubmit={handleInitialize} className="space-y-4">
@@ -139,7 +152,6 @@ export default function AutonomousAgentDashboard() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     disabled={!!agentId}
-                    suppressHydrationWarning
                     className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 rounded p-2.5 text-xs outline-none text-slate-200 transition font-mono"
                   />
                 </div>
@@ -150,22 +162,20 @@ export default function AutonomousAgentDashboard() {
                     value={domain}
                     onChange={(e) => setDomain(e.target.value)}
                     disabled={!!agentId}
-                    suppressHydrationWarning
                     className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 rounded p-2.5 text-xs outline-none text-slate-200 transition font-mono"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={loadingInit || !!agentId}
-                  suppressHydrationWarning
                   className="w-full bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-mono text-xs font-bold py-3 rounded transition-all disabled:opacity-40 disabled:pointer-events-none shadow-lg shadow-cyan-900/20 active:scale-[0.99]"
                 >
-                  {loadingInit ? 'Spawning Instance Logic...' : agentId ? 'Cognitive Layer Established' : 'Initialize Autonomous Agent'}
+                  {loadingInit ? 'Spawning Instance...' : agentId ? 'Autonomous Engine Active' : 'Initialize Autonomous Agent'}
                 </button>
               </form>
             </section>
 
-            {/* Live Telemetry / Agent Reasoning Logs */}
+            {/* Reasoning Telemetry Log */}
             <section className="bg-slate-900/50 border border-slate-800/80 p-5 rounded-xl backdrop-blur-md shadow-xl flex flex-col">
               <h2 className="text-xs font-mono uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-800 pb-2">
                 🤖 Telemetry Reasoning Log
@@ -184,52 +194,47 @@ export default function AutonomousAgentDashboard() {
             </section>
           </div>
 
-          {/* Right Column Content Stream */}
+          {/* Right Column Stream */}
           <div className="lg:col-span-8 space-y-4">
             <h2 className="text-xs font-mono uppercase tracking-widest text-slate-400 border-b border-slate-800 pb-2 flex justify-between items-center">
-              <span>Synchronized Post Stream</span>
+              <span>Autonomous Dispatch Stream</span>
               <span className="text-[10px] text-slate-500 font-normal font-mono normal-case bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">
-                Human-In-The-Loop Panel Enabled
+                Live Feed Observability Enabled
               </span>
             </h2>
 
             {!agentId && (
               <div className="border border-dashed border-slate-800/80 rounded-xl p-16 text-center text-slate-500 font-mono text-xs bg-slate-900/10">
-                Awaiting orchestration configuration signature loop down to view streaming pipeline items.
+                Awaiting agent initialization to view live streaming feed items.
               </div>
             )}
 
             {feed.map((post) => (
               <article key={post.id} className={`bg-slate-900/40 border p-5 rounded-xl space-y-4 transition-all duration-300 shadow-md ${
-                post.status === 'approved' ? 'border-emerald-500/30 bg-emerald-950/5' : 
-                post.status === 'rejected' ? 'border-rose-500/20 opacity-40 grayscale bg-rose-950/5' : 
-                'border-slate-800/80'
+                post.status === 'flagged' ? 'border-amber-500/30 bg-amber-950/5' : 'border-slate-800/80'
               }`}>
                 {/* Meta Header */}
                 <div className="flex justify-between items-center text-[10px] font-mono text-slate-500">
                   <div className="flex items-center gap-3">
-                    <span className="text-cyan-400 font-bold">NODE_ID: {post.id}</span>
+                    <span className="text-cyan-400 font-bold">POST_ID: {post.id}</span>
                     <span>•</span>
                     <span>{mounted ? new Date(post.createdAt).toLocaleTimeString() : ''} UTC</span>
                   </div>
-                  
-                  {/* Status Indicator */}
+
                   <span className={`px-2 py-0.5 rounded text-[9px] uppercase tracking-wider font-bold ${
-                    post.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                    post.status === 'rejected' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
-                    'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                    post.status === 'flagged' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                   }`}>
-                    {post.status}
+                    {post.status === 'flagged' ? 'Flagged for Audit' : 'Published Autonomously'}
                   </span>
                 </div>
 
-                {/* Body Content */}
+                {/* Content */}
                 <p className="text-sm text-slate-200 leading-relaxed font-sans">{post.text}</p>
 
-                {/* Source Badges */}
+                {/* Sources */}
                 {post.sources && post.sources.length > 0 && (
                   <div className="flex items-center gap-2 pt-1">
-                    <span className="text-[10px] font-mono text-slate-500 uppercase">Verified Inputs:</span>
+                    <span className="text-[10px] font-mono text-slate-500 uppercase">Verified Sources:</span>
                     <div className="flex flex-wrap gap-1.5">
                       {post.sources.map((src, idx) => (
                         <a key={idx} href={src} target="_blank" rel="noreferrer" className="text-[10px] font-mono bg-indigo-950/40 border border-indigo-800/50 text-indigo-300 hover:text-indigo-200 px-2 py-0.5 rounded transition hover:border-indigo-600">
@@ -242,18 +247,15 @@ export default function AutonomousAgentDashboard() {
 
                 {/* Strategic Context / Rationale */}
                 <div className="pt-2 border-t border-slate-800/60 text-xs font-mono text-slate-400">
-                  <span className="text-indigo-400 font-bold">Strategic Context: </span>
+                  <span className="text-indigo-400 font-bold">Publishing Rationale: </span>
                   {post.rationale}
                 </div>
 
-                {/* Human-in-the-Loop Controls */}
-                {post.status === 'pending' && (
-                  <div className="flex justify-end gap-2 pt-2 border-t border-slate-800/40">
-                    <button onClick={() => handleAction(post.id, 'rejected')} className="bg-slate-950 border border-slate-800 hover:border-rose-500/30 hover:text-rose-400 text-slate-400 font-mono text-[10px] uppercase font-bold px-3 py-1.5 rounded transition-all">
-                      ❌ Reject Post
-                    </button>
-                    <button onClick={() => handleAction(post.id, 'approved')} className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-mono text-[10px] uppercase font-bold px-3 py-1.5 rounded transition-all shadow-md shadow-emerald-950">
-                      👍 Approve & Dispatch
+                {/* Optional Governance Action */}
+                {post.status !== 'flagged' && (
+                  <div className="flex justify-end pt-2 border-t border-slate-800/40">
+                    <button onClick={() => handleFlag(post.id)} className="text-slate-500 hover:text-amber-400 font-mono text-[10px] uppercase tracking-wider transition-colors">
+                      🚩 Flag Post for Observability Audit
                     </button>
                   </div>
                 )}
