@@ -12,12 +12,16 @@ export async function GET(req: Request) {
       'BREETH_API_KEY configured:',
       Boolean(process.env.BREETH_API_KEY)
     );
-    
-    if (process.env.BREETH_API_KEY) {      const res = await fetch(
-        'https://api.thebreeth.com/v1/memory?type=agent_post',
+
+    if (process.env.BREETH_API_KEY) {
+      const res = await fetch(
+        `https://api.thebreeth.com/v1/memories?agent_id=${encodeURIComponent(
+          agentId
+        )}&limit=20`,
         {
           headers: {
-            'Authorization':` Bearer ${process.env.BREETH_API_KEY}`,
+            'Authorization': `Bearer ${process.env.BREETH_API_KEY}`,
+            'Content-Type': 'application/json',
           },
           cache: 'no-store',
         }
@@ -37,7 +41,9 @@ export async function GET(req: Request) {
         posts = (data.memories || [])
           .map((m: any) => {
             try {
-              return JSON.parse(m.content);
+              return typeof m.content === 'string'
+                ? JSON.parse(m.content)
+                : m.content;
             } catch {
               return null;
             }
