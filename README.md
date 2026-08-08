@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🤖 Autonomous AI Creator Engine — ViCodathon Submission
 
-## Getting Started
+An advanced orchestration dashboard for an **Autonomous AI Creator Engine** built with Next.js 14 and Tailwind CSS. The platform features real-time telemetry streaming, memory layer routing, grounded source verification, and an interactive **Human-In-The-Loop (HITL)** governance interface.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 Key Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+* **Human-In-The-Loop (HITL) Controls:** Real-time post evaluation interface allowing administrators to review, **APPROVE & DISPATCH**, or **REJECT** synthesized content before distribution.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+* **Live Telemetry & Reasoning Logs:** Real-time background stream tracking agent activation signatures, model reasoning, and system operations.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+* **Grounded Source Verification:** Interactive verification badges mapping content directly to trusted sources like arXiv and GitHub repositories.
 
-## Learn More
+* **Breeth Engine Integration:** API route architecture handling agent initialization and feed streaming with secure memory persistence.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🛠️ Tech Stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+* **Framework:** Next.js (App Router, React Server Components)
 
-## Deploy on Vercel
+* **Styling:** Tailwind CSS (Dark Cyberpunk Palette)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+* **Language:** TypeScript
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+* **Deployment:** Vercel
+
+---
+
+## 📂 Project Structure
+
+```text
+
+vibe-code-hackathon/
+
+├── [PROMPTS.md](http://PROMPTS.md)             # Required AI-usage log documentation
+
+├── [README.md](http://README.md)              # Project architecture & setup documentation
+
+├── .env.local             # Local environment configurations (Protected Key)
+
+└── src/
+
+    └── app/
+
+        ├── layout.tsx     # Global layout shell
+
+        ├── page.tsx       # Main Telemetry & HITL Governance Dashboard
+
+        └── api/
+
+            └── agent/
+
+                ├── init/  # POST handler for agent initialization
+
+                └── feed/  # GET handler returning synchronized post stream
