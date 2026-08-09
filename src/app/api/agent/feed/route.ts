@@ -1,5 +1,48 @@
 ﻿import { NextResponse } from 'next/server';
 
+function parseEpisodeContent(rawContent: unknown): any | null {
+  if (!rawContent) return null;
+
+  if (typeof rawContent === 'object') {
+    return rawContent;
+  }
+
+  try {
+    return JSON.parse(String(rawContent).trim());
+  } catch {
+    return null;
+  }
+}
+
+async function fetchFullEpisode(uuid: string): Promise<any | null> {
+  try {
+    const res = await fetch(
+      `https://api.thebreeth.com/v1/episodes/${encodeURIComponent(uuid)}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${process.env.BREETH_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store',
+      }
+    );
+
+    console.log('EPISODE DETAIL STATUS:', uuid, res.status);
+
+    if (!res.ok) {
+      return null;
+    }
+
+    const detail = await res.json();
+
+    return detail?.content ?? null;
+  } catch (error) {
+    console.log('EPISODE DETAIL FETCH ERROR:', uuid, error);
+    return null;
+  }
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const agentId =
@@ -55,49 +98,67 @@ export async function GET(req: Request) {
       );
     }
 
-    const episodes = data.episodes || [];
+    const episodes = Array.isArray(data.episodes)
+      ? data.episodes
+      : [];
 
-    const posts = episodes
-      .map((episode: any) => {
-        try {
-          const rawContent =
-            episode.content_excerpt ||
-            episode.content ||
-            '';
+    console.log('BREETH EPISODES COUNT:', episodes.length);
 
-          const content =
-            typeof rawContent === 'string'
-              ? JSON.parse(rawContent)
-              : rawContent;
+    const posts: any[] = [];
 
-          if (
-            content &&
-            content.type !== 'agent_initialization' &&
-            content.id &&
-            content.createdAt &&
-            content.text &&
-            content.rationale
-          ) {
-            return {
-              id: content.id,
-              createdAt: content.createdAt,
-              text: content.text,
-              rationale: content.rationale,
-              sources: content.sources || [],
-            };
-          }
+    for (const episode of episodes) {
+      const uuid = episode?.uuid;
 
-          return null;
-        } catch {
-          return null;
-        }
-      })
-      .filter(Boolean);
+      if (!uuid) {
+        console.log('SKIPPING EPISODE: no uuid field');
+        continue;
+      }
+
+      const rawContent = await fetchFullEpisode(uuid);
+
+      if (!rawContent) {
+        console.log('SKIPPING EPISODE: full content fetch failed', uuid);
+        continue;
+      }
+
+      const content = parseEpisodeContent(rawContent);
+
+      if (!content) {
+        console.log('SKIPPING EPISODE: could not parse full content', uuid);
+        continue;
+      }
+
+      if (content.type === 'agent_initialization') {
+        console.log('SKIPPING INITIALIZATION EPISODE', uuid);
+        continue;
+      }
+
+      if (
+        !content.id ||
+        !content.createdAt ||
+        !content.text ||
+        !content.rationale
+      ) {
+        console.log('SKIPPING EPISODE: missing required post fields', uuid);
+        continue;
+      }
+
+      const post = {
+        id: content.id,
+        createdAt: content.createdAt,
+        text: content.text,
+        rationale: content.rationale,
+        sources: Array.isArray(content.sources) ? content.sources : [],
+      };
+
+      console.log('PARSED POST:', post.id);
+
+      posts.push(post);
+    }
 
     posts.sort(
-      (a: any, b: any) =>
-        new Date(b.createdAt).getTime() -
-        new Date(a.createdAt).getTime()
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
     console.log('FINAL FEED POSTS COUNT:', posts.length);
@@ -107,9 +168,7 @@ export async function GET(req: Request) {
     console.error('FEED ERROR:', error);
 
     return NextResponse.json(
-      {
-        error: error?.message || 'Internal Server Error',
-      },
+      { error: error?.message || 'Internal Server Error' },
       { status: 500 }
     );
   }
